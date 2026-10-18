@@ -8,6 +8,10 @@ No Spotify Premium or desktop client required.
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 [![Built with Rust](https://img.shields.io/badge/Language-Rust-orange.svg)](https://www.rust-lang.org)
 
+<br/>
+
+![fringe demo](demo.gif)
+
 </div>
 
 ---
