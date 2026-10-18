@@ -1,0 +1,6 @@
+/target
+demo.gif
+test.mp4
+*.pcm
+*.log
+.DS_Store

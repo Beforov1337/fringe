@@ -1,0 +1,23 @@
+[package]
+name = "fringe"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1.0.104"
+crossterm = "0.29.0"
+fastrand = "2.5.0"
+base64 = "0.22.1"
+image = { version = "0.25.10", default-features = false, features = ["jpeg", "png", "webp"] }
+ratatui = "0.30.2"
+regex = "1.13.1"
+reqwest = { version = "0.13.5", features = ["json", "rustls"] }
+rodio = "0.23.0"
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"
+tempfile = "3.27.0"
+tokio = { version = "1.53.3", features = ["full"] }
+unicode-width = "0.2.2"
+urlencoding = "2.1.3"
+portable-pty = "0.9.0"
+vt100 = "0.17.0"
