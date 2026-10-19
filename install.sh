@@ -10,13 +10,13 @@ CONFIG_DIR="${HOME}/.config/fringe"
 echo "==> Building fringe (release mode)..."
 cargo build --release
 
-echo "==> Installing binary to ${INSTALL_DIR}..."
+echo "==> Installing binary to ~/.local/bin..."
 mkdir -p "${INSTALL_DIR}"
 install -m 755 target/release/fringe "${INSTALL_DIR}/fringe"
 
 # Ensure default config exists
 if [ ! -f "${CONFIG_DIR}/fringe.conf" ]; then
-    echo "==> Creating default config in ${CONFIG_DIR}/fringe.conf..."
+    echo "==> Creating default config in ~/.config/fringe/fringe.conf..."
     mkdir -p "${CONFIG_DIR}"
     cat << 'EOF' > "${CONFIG_DIR}/fringe.conf"
 # fringe configuration
@@ -56,5 +56,5 @@ echo ""
 echo "✔ Installation complete!"
 echo "Run 'fringe' to start listening."
 if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
-    echo "Notice: Make sure ${INSTALL_DIR} is in your PATH."
+    echo "Notice: Make sure ~/.local/bin is in your PATH."
 fi
