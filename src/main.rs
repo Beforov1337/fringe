@@ -40,8 +40,14 @@ async fn main() -> Result<()> {
     let tokio_handle = tokio::runtime::Handle::current();
     let mut app = app::App::new(tokio_handle)?;
 
-    // Open URL input modal immediately at launch
-    app.is_url_modal_open = true;
+    // Auto-load last playlist if available, otherwise open URL input modal
+    if let Some(last_url) = app::App::get_last_playlist() {
+        app.url_input = last_url.clone();
+        app.load_spotify_url(&last_url);
+        app.is_url_modal_open = false;
+    } else {
+        app.is_url_modal_open = true;
+    }
 
     let mut last_tick = Instant::now();
     let target_fps = app.config.framerate.clamp(15, 144);

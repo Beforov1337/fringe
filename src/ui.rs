@@ -346,12 +346,15 @@ fn render_afk_spectrum(frame: &mut Frame, app: &mut App, area: Rect) {
     frame.render_widget(bottom_p, chunks[2]);
 }
 
-fn render_header(frame: &mut Frame, app: &App, area: Rect) {
+fn render_header(frame: &mut Frame, app: &mut App, area: Rect) {
     let cfg = &app.config;
     let header_block = Block::default()
         .borders(Borders::ALL)
         .border_type(BorderType::Rounded)
         .border_style(Style::default().fg(cfg.color_inactive));
+
+    let inner = header_block.inner(area);
+    frame.render_widget(header_block, area);
 
     let is_playing = app.audio_player.is_playing.load(std::sync::atomic::Ordering::Relaxed);
     let is_paused = app.audio_player.is_paused();
@@ -366,27 +369,96 @@ fn render_header(frame: &mut Frame, app: &App, area: Rect) {
         ("⏹ Stopped", cfg.color_inactive)
     };
 
-    let vol = (app.audio_player.get_volume() * 100.0).round() as u32;
+    let vol_f = app.audio_player.get_volume().clamp(0.0, 1.0);
+    let vol_pct = (vol_f * 100.0).round() as u32;
 
-    let title_line = Line::from(vec![
-        Span::styled(" ♫ FRINGE  ", Style::default().fg(cfg.color_primary).add_modifier(Modifier::BOLD)),
-        Span::styled(format!("·  {}  ", status_badge), Style::default().fg(badge_color).add_modifier(Modifier::BOLD)),
-        Span::styled(format!("·  Vol {}%  ", vol), Style::default().fg(cfg.color_sung_word)),
-        Span::styled(
-            if app.shuffle { "·  Shuffle  " } else { "" },
-            Style::default().fg(cfg.color_accent).add_modifier(Modifier::BOLD),
-        ),
-        Span::styled(
-            if app.repeat { "·  Repeat  " } else { "" },
-            Style::default().fg(cfg.color_accent).add_modifier(Modifier::BOLD),
-        ),
-    ]);
+    // Header layout: Title/Status (min 22) -> Controls (18) -> Vol Slider Mixer (28)
+    let header_chunks = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([
+            Constraint::Min(24),   // Logo & Status
+            Constraint::Length(24), // Quick Click Controls [⏮ ⏯ ⏭ 🔀 🔁]
+            Constraint::Length(28), // Volume Mixer [ 🔉 ━━━━━●━━━ 85% ]
+        ])
+        .split(inner);
 
-    let p = Paragraph::new(title_line)
-        .block(header_block)
-        .alignment(Alignment::Left);
+    // 1. Logo & Status
+    let logo_spans = vec![
+        Span::styled("♫ FRINGE ", Style::default().fg(cfg.color_primary).add_modifier(Modifier::BOLD)),
+        Span::styled(format!("· {} ", status_badge), Style::default().fg(badge_color).add_modifier(Modifier::BOLD)),
+    ];
+    frame.render_widget(Paragraph::new(Line::from(logo_spans)), header_chunks[0]);
 
-    frame.render_widget(p, area);
+    // 2. Clickable media controls
+    let ctrl_area = header_chunks[1];
+    let ctrl_chunks = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([
+            Constraint::Length(4), // Prev [⏮]
+            Constraint::Length(5), // Play/Pause [⏯]
+            Constraint::Length(4), // Next [⏭]
+            Constraint::Length(5), // Shuffle [🔀]
+            Constraint::Length(5), // Repeat [🔁]
+        ])
+        .split(ctrl_area);
+
+    app.rects.prev_btn = Some(ctrl_chunks[0]);
+    app.rects.play_pause_btn = Some(ctrl_chunks[1]);
+    app.rects.next_btn = Some(ctrl_chunks[2]);
+    app.rects.shuffle_btn = Some(ctrl_chunks[3]);
+    app.rects.repeat_btn = Some(ctrl_chunks[4]);
+
+    frame.render_widget(
+        Paragraph::new(Span::styled("⏮ ", Style::default().fg(cfg.color_primary).add_modifier(Modifier::BOLD))),
+        ctrl_chunks[0],
+    );
+    let pp_icon = if is_playing && !is_paused { "⏸ " } else { "▶ " };
+    frame.render_widget(
+        Paragraph::new(Span::styled(pp_icon, Style::default().fg(badge_color).add_modifier(Modifier::BOLD))),
+        ctrl_chunks[1],
+    );
+    frame.render_widget(
+        Paragraph::new(Span::styled("⏭ ", Style::default().fg(cfg.color_primary).add_modifier(Modifier::BOLD))),
+        ctrl_chunks[2],
+    );
+
+    let shuff_color = if app.shuffle { cfg.color_accent } else { cfg.color_inactive };
+    frame.render_widget(
+        Paragraph::new(Span::styled("🔀 ", Style::default().fg(shuff_color).add_modifier(if app.shuffle { Modifier::BOLD } else { Modifier::empty() }))),
+        ctrl_chunks[3],
+    );
+
+    let rep_color = if app.repeat { cfg.color_accent } else { cfg.color_inactive };
+    frame.render_widget(
+        Paragraph::new(Span::styled("🔁 ", Style::default().fg(rep_color).add_modifier(if app.repeat { Modifier::BOLD } else { Modifier::empty() }))),
+        ctrl_chunks[4],
+    );
+
+    // 3. Interactive Volume Mixer Slider
+    let vol_area = header_chunks[2];
+    app.rects.volume_slider = Some(vol_area);
+
+    // Draw visual volume slider: "🔉 ━━━━━●━━━ 85%"
+    let slider_width = 10;
+    let filled = ((vol_f * (slider_width as f32)).round() as usize).min(slider_width);
+    let empty = slider_width.saturating_sub(filled);
+
+    let vol_icon = if vol_pct == 0 { "🔇" } else if vol_pct < 50 { "🔉" } else { "🔊" };
+    let mut bar_str = String::with_capacity(slider_width + 1);
+    for _ in 0..filled {
+        bar_str.push('━');
+    }
+    bar_str.push('●');
+    for _ in 0..empty.saturating_sub(1) {
+        bar_str.push('─');
+    }
+
+    let vol_spans = vec![
+        Span::styled(format!("{} ", vol_icon), Style::default()),
+        Span::styled(bar_str, Style::default().fg(cfg.color_accent).add_modifier(Modifier::BOLD)),
+        Span::styled(format!(" {:>3}%", vol_pct), Style::default().fg(cfg.color_sung_word)),
+    ];
+    frame.render_widget(Paragraph::new(Line::from(vol_spans)).alignment(Alignment::Right), vol_area);
 }
 
 fn render_body(frame: &mut Frame, app: &mut App, area: Rect) {
@@ -507,6 +579,7 @@ fn render_left_panel(frame: &mut Frame, app: &mut App, area: Rect) {
         )
         .ratio(ratio)
         .label("");
+    app.rects.progress_bar = Some(info_layout[4]);
     frame.render_widget(gauge, info_layout[4]);
 
     let time_label = Paragraph::new(Line::from(vec![
@@ -663,6 +736,7 @@ fn render_right_panel(frame: &mut Frame, app: &mut App, area: Rect) {
     )
     .header(header_row);
 
+    app.rects.playlist_table = Some(panel_chunks[1]);
     frame.render_widget(table, panel_chunks[1]);
 }
 
@@ -723,7 +797,7 @@ fn render_footer(frame: &mut Frame, _app: &App, area: Rect) {
     frame.render_widget(footer, area);
 }
 
-fn render_url_modal(frame: &mut Frame, app: &App, area: Rect) {
+fn render_url_modal(frame: &mut Frame, app: &mut App, area: Rect) {
     let popup_width = 72.min(area.width.saturating_sub(4));
     let popup_height = 19.min(area.height.saturating_sub(2));
 
@@ -734,6 +808,7 @@ fn render_url_modal(frame: &mut Frame, app: &App, area: Rect) {
         height: popup_height,
     };
 
+    app.rects.modal_area = Some(popup_area);
     frame.render_widget(Clear, popup_area);
 
     let modal_block = Block::default()
@@ -757,6 +832,8 @@ fn render_url_modal(frame: &mut Frame, app: &App, area: Rect) {
             Constraint::Length(1), // Buttons hint
         ])
         .split(inner);
+
+    app.rects.modal_presets = Some(modal_chunks[3]);
 
     let hint = Paragraph::new(
         "Paste any open.spotify.com link (playlist, album, or track) below:"

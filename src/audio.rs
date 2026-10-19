@@ -177,10 +177,11 @@ impl AudioPlayer {
         thread::spawn(move || {
             let mut p1 = Command::new(yt_dlp_bin);
             p1.args(&[
-                "-f", "bestaudio/best",
+                "-f", "ba/b",
                 "--no-playlist",
                 "--no-warnings",
-                "--buffer-size", "64k",
+                "--no-check-certificates",
+                "--buffer-size", "16k",
                 "-o", "-",
                 &search_arg,
             ]);
@@ -266,10 +267,11 @@ impl AudioPlayer {
 
         let mut p1 = Command::new(yt_dlp_bin);
         p1.args(&[
-            "-f", "bestaudio/best",
+            "-f", "ba/b",
             "--no-playlist",
             "--no-warnings",
-            "--buffer-size", "64k",
+            "--no-check-certificates",
+            "--buffer-size", "16k",
             "-o", "-",
             &search_arg,
         ]);

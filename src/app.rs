@@ -1,4 +1,6 @@
 use anyhow::Result;
+use std::fs;
+use std::path::PathBuf;
 use std::sync::mpsc::{channel, Receiver, Sender};
 use std::sync::Arc;
 use std::time::Instant;
@@ -10,6 +12,22 @@ use crate::cover::CoverArtRenderer;
 use crate::lyrics::{LyricsClient, LyricsData};
 use crate::spotify::{PlaylistMeta, SpotifyClient, TrackItem, PRESETS};
 use crate::visualizer::CavaVisualizer;
+
+use ratatui::layout::Rect;
+
+#[derive(Default, Clone, Copy)]
+pub struct LayoutRects {
+    pub play_pause_btn: Option<Rect>,
+    pub next_btn: Option<Rect>,
+    pub prev_btn: Option<Rect>,
+    pub shuffle_btn: Option<Rect>,
+    pub repeat_btn: Option<Rect>,
+    pub volume_slider: Option<Rect>,
+    pub progress_bar: Option<Rect>,
+    pub playlist_table: Option<Rect>,
+    pub modal_area: Option<Rect>,
+    pub modal_presets: Option<Rect>,
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AfkMode {
@@ -49,6 +67,9 @@ pub struct App {
     pub is_afk: bool,
     pub afk_mode: AfkMode,
     pub last_activity: Instant,
+
+    // Mouse Hit Regions
+    pub rects: LayoutRects,
 
     // Lyrics
     pub lyrics: Option<LyricsData>,
@@ -108,6 +129,7 @@ impl App {
             is_afk: false,
             afk_mode: AfkMode::Lyrics,
             last_activity: Instant::now(),
+            rects: LayoutRects::default(),
 
             lyrics: None,
             is_loading_lyrics: false,
@@ -155,11 +177,41 @@ impl App {
         pl.tracks.get(idx)
     }
 
+    pub fn last_playlist_path() -> PathBuf {
+        Config::config_path()
+            .parent()
+            .map(|p| p.join("last_playlist.txt"))
+            .unwrap_or_else(|| PathBuf::from("last_playlist.txt"))
+    }
+
+    pub fn save_last_playlist(url: &str) {
+        let path = Self::last_playlist_path();
+        if let Some(parent) = path.parent() {
+            let _ = fs::create_dir_all(parent);
+        }
+        let _ = fs::write(path, url.trim());
+    }
+
+    pub fn get_last_playlist() -> Option<String> {
+        let path = Self::last_playlist_path();
+        if path.exists() {
+            if let Ok(content) = fs::read_to_string(path) {
+                let trimmed = content.trim().to_string();
+                if !trimmed.is_empty() {
+                    return Some(trimmed);
+                }
+            }
+        }
+        None
+    }
+
     pub fn load_spotify_url(&mut self, url: &str) {
         let url = url.trim().to_string();
         if url.is_empty() {
             return;
         }
+
+        Self::save_last_playlist(&url);
 
         self.status_message = format!("Fetching Spotify metadata for '{}'...", url);
         self.is_url_modal_open = false;
@@ -244,8 +296,6 @@ impl App {
                 let _ = tx.send(AppEvent::PlaybackStarted);
             });
         });
-
-        self.is_loading_track = false;
     }
 
     pub fn playback_elapsed(&self) -> f64 {
@@ -369,6 +419,7 @@ impl App {
                     self.is_loading_lyrics = false;
                 }
                 AppEvent::PlaybackStarted => {
+                    self.is_loading_track = false;
                     self.track_started_at = Some(Instant::now());
                     self.paused_at = None;
                     self.total_paused_duration = std::time::Duration::ZERO;

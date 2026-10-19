@@ -21,6 +21,7 @@ No Spotify Premium or desktop client required.
 - **Word-Synced Karaoke Lyrics**: Words highlight in real-time as they are vocalized, with configurable effects (glow, adaptive underline, boxes, dots, or bold).
 - **Embedded Visualizer via PTY**: Features a built-in CAVA audio spectrum equalizer, or lets you embed external terminal programs (`lavat`, system `cava`, `pipes.sh`) directly into the visualizer panel.
 - **Terminal Album Art**: Native terminal graphics support (Kitty, iTerm2/WezTerm protocols) with clean high-res half-block Unicode fallback.
+- **Persistent Sessions**: Automatically remembers and restores your last loaded Spotify playlist across restarts.
 - **Zero-Lag Playback**: Smart local disk PCM caching and pre-buffering ensure immediate track start and fast playlist skipping.
 - **AFK / Screensaver View**: Fullscreen mode for lyrics or spectrum visualizer.
 - **Lightweight & Configurable**: Driven by a simple plain-text config at `~/.config/fringe/fringe.conf`.
@@ -77,7 +78,17 @@ cargo build --release
 
 ---
 
-## ⌨ Controls
+## ⌨ Controls & Mouse Support
+
+### 🖱 Mouse Support
+- **Click Play / Pause / Next / Prev / Shuffle / Repeat** icons in the top bar.
+- **Interactive Volume Mixer**: Click anywhere on the volume slider `🔉 ━━●── 65%` to set volume instantly, or scroll the mouse wheel over it.
+- **Seek / Jump in Song**: Click anywhere on the progress bar gauge to jump directly to that part of the track.
+- **Select & Play Song**: Click any track in the playlist table to start playing it immediately.
+- **Scroll Playlist**: Use the mouse wheel to scroll up and down the track list.
+- **Presets Modal**: Click presets or click outside the modal window to close it.
+
+### ⌨ Keyboard Shortcuts
 
 | Key | Action |
 | :--- | :--- |
@@ -89,7 +100,7 @@ cargo build --release
 | `/` | Live track search / filter |
 | `S` | Toggle Shuffle |
 | `R` | Toggle Repeat |
-| `+` / `-` | Volume up / down |
+| `+` / `-` (`[` / `]`) | Volume up / down |
 | `Q` | Quit |
 
 ---
