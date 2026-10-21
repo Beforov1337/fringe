@@ -80,13 +80,6 @@ cargo build --release
 
 ## ⌨ Controls & Mouse Support
 
-### 🖱 Mouse Support
-- **Click Play / Pause / Next / Prev / Shuffle / Repeat** icons in the top bar.
-- **Interactive Volume Mixer**: Click anywhere on the volume slider `🔉 ━━●── 65%` to set volume instantly, or scroll the mouse wheel over it.
-- **Seek / Jump in Song**: Click anywhere on the progress bar gauge to jump directly to that part of the track.
-- **Select & Play Song**: Click any track in the playlist table to start playing it immediately.
-- **Scroll Playlist**: Use the mouse wheel to scroll up and down the track list.
-- **Presets Modal**: Click presets or click outside the modal window to close it.
 
 ### ⌨ Keyboard Shortcuts
 
