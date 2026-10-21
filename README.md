@@ -78,7 +78,7 @@ cargo build --release
 
 ---
 
-## ⌨ Controls & Mouse Support
+## ⌨ Controls
 
 
 ### ⌨ Keyboard Shortcuts
